@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DOMPurify from "dompurify";
+import truncate from "html-truncate";
 
 type Job = {
   id: string;
@@ -30,7 +32,7 @@ export default function Home() {
   if (loading) return <p>Loading jobs...</p>;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 bg-sky-600 text-sky-600/70 rounded-3xl p-6 h-full mx-48 scrollable">
+    <div className="flex flex-col items-center justify-center gap-6 h-full mx-48">
       {jobs.map((job) => (
         <ul key={job.id} className="w-full p-6 mx-6 rounded-2xl shadow-md shadow-black/50 bg-[#171717]">
           <h2 className="text-2xl text-gray-200 font-semibold">{job.title}</h2>
@@ -40,7 +42,14 @@ export default function Home() {
           <p className="text-gray-400">
             {job.jobType} | {job.salary}
           </p>
-          <p className="text-gray-400">{job.description}</p>
+          <p
+            className="text-gray-400 mt-6"
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(truncate(job.description, 360), {
+                FORBID_ATTR: ["style"], // removes all inline styles
+              }),
+            }}
+          />
           <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-sky-500 underline mt-6 inline-block">
             View Job
           </a>

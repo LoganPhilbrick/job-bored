@@ -15,9 +15,7 @@ export async function GET(request: Request) {
     const location = job.candidate_required_location || "";
 
     const checkTitleDesc = title.includes(keyword.toLowerCase()) || description.includes(keyword.toLowerCase());
-    // const checkDesc = description.includes(keyword.toLowerCase()) && !description.includes("senior");
     const checkLocal = location.includes("USA");
-
     const containsExcludedWord = excludedKeywords.some((excluded) => title.includes(excluded));
 
     return checkTitleDesc && checkLocal && !containsExcludedWord;
