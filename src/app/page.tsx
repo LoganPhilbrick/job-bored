@@ -40,6 +40,7 @@ export default function Home() {
           <p className="text-gray-400">
             {job.jobType} | {job.salary}
           </p>
+          <p className="text-gray-400">{job.description}</p>
           <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-sky-500 underline mt-6 inline-block">
             View Job
           </a>

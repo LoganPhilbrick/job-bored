@@ -5,7 +5,7 @@ export async function GET() {
     orderBy: {
       postedAt: "desc",
     },
-    take: 5, // just show recent ones
+    take: 50, // just show recent ones
   });
 
   return Response.json(jobs);
