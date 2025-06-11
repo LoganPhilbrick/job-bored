@@ -12,7 +12,7 @@ type Job = {
   job_type: string;
   postedAt: string;
   candidate_required_location: string;
-  salary: string;
+  salary: string | null;
   url: string;
   description: string;
 };
@@ -42,13 +42,13 @@ export default function Home() {
             {job.company_name} — {job.candidate_required_location}
           </p>
           <p className="text-gray-400">
-            {job.job_type} | {job.salary}
+            {job.job_type} | {job.salary ? `${job.salary}` : "Compensation not specified"}
           </p>
           <p
             className="text-gray-400 mt-6"
             dangerouslySetInnerHTML={{
               __html: DOMPurify.sanitize(truncate(job.description, 360), {
-                FORBID_ATTR: ["style"], // removes all inline styles
+                FORBID_ATTR: ["style"],
               }),
             }}
           />

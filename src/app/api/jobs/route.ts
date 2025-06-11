@@ -4,6 +4,7 @@ export const revalidate = 1800; // cache for 30 minutes if deployed
 interface Job {
   title: string;
   description: string;
+  candidate_required_location: string;
 }
 
 export async function GET(request: Request) {
@@ -20,11 +21,13 @@ export async function GET(request: Request) {
     const filtered = rawJobs.filter((job: Job) => {
       const title = job.title?.toLowerCase() || "";
       const description = job.description?.toLowerCase() || "";
+      const location = job.candidate_required_location?.toLowerCase() || "";
 
       const includesKeyword = title.includes(keyword) || description.includes(keyword);
       const excludesBadTerms = !excludedTerms.some((term) => title.includes(term) || description.includes(term));
+      const restrictLocation = location.includes("usa");
 
-      return includesKeyword && excludesBadTerms;
+      return includesKeyword && excludesBadTerms && restrictLocation;
     });
 
     return Response.json(filtered);
