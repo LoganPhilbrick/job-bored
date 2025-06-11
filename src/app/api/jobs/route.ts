@@ -1,27 +1,35 @@
-import { fetchJobsFromRemotive } from "@/utils/fetchJobs";
-import { saveJobs } from "@/utils/saveJobs";
+export const dynamic = "force-dynamic"; // disables static cache if you're testing often
+export const revalidate = 1800; // cache for 30 minutes if deployed
+
+interface Job {
+  title: string;
+  description: string;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const keyword = searchParams.get("keyword") || "developer";
+  const keyword = searchParams.get("keyword")?.toLowerCase() || "developer";
 
-  const excludedKeywords = ["senior", "sr"];
+  try {
+    const res = await fetch(`https://remotive.com/api/remote-jobs?search=${encodeURIComponent(keyword)}`);
+    const data = await res.json();
 
-  const rawJobs = await fetchJobsFromRemotive(keyword);
+    const rawJobs = data.jobs || [];
 
-  const filtered = rawJobs.filter((job: { title: string; description: string; candidate_required_location: string }) => {
-    const title = job.title?.toLowerCase() || "";
-    const description = job.description?.toLowerCase() || "";
-    const location = job.candidate_required_location || "";
+    const excludedTerms = ["senior"];
+    const filtered = rawJobs.filter((job: Job) => {
+      const title = job.title?.toLowerCase() || "";
+      const description = job.description?.toLowerCase() || "";
 
-    const checkTitleDesc = title.includes(keyword.toLowerCase()) || description.includes(keyword.toLowerCase());
-    const checkLocal = location.includes("USA");
-    const containsExcludedWord = excludedKeywords.some((excluded) => title.includes(excluded));
+      const includesKeyword = title.includes(keyword) || description.includes(keyword);
+      const excludesBadTerms = !excludedTerms.some((term) => title.includes(term) || description.includes(term));
 
-    return checkTitleDesc && checkLocal && !containsExcludedWord;
-  });
+      return includesKeyword && excludesBadTerms;
+    });
 
-  await saveJobs(filtered);
-
-  return Response.json(filtered);
+    return Response.json(filtered);
+  } catch (error) {
+    console.error("Error fetching jobs:", error);
+    return new Response("Failed to fetch jobs", { status: 500 });
+  }
 }

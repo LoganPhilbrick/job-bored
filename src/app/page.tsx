@@ -7,10 +7,11 @@ import truncate from "html-truncate";
 type Job = {
   id: string;
   title: string;
-  companyName: string;
-  jobType: string;
+  company_name: string;
+  company_logo: string;
+  job_type: string;
   postedAt: string;
-  location: string;
+  candidate_required_location: string;
   salary: string;
   url: string;
   description: string;
@@ -21,10 +22,11 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/jobs/from-db")
+    fetch(`/api/jobs?keyword=${encodeURIComponent("developer")}`)
       .then((res) => res.json())
       .then((data) => {
         setJobs(data);
+        console.log("Fetched jobs:", data);
         setLoading(false);
       });
   }, []);
@@ -37,10 +39,10 @@ export default function Home() {
         <ul key={job.id} className="w-full p-6 mx-6 rounded-2xl shadow-md shadow-black/50 bg-[#171717]">
           <h2 className="text-2xl text-gray-200 font-semibold">{job.title}</h2>
           <p className="text-xl text-gray-300">
-            {job.companyName} — {job.location}
+            {job.company_name} — {job.candidate_required_location}
           </p>
           <p className="text-gray-400">
-            {job.jobType} | {job.salary}
+            {job.job_type} | {job.salary}
           </p>
           <p
             className="text-gray-400 mt-6"
