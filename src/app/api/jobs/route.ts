@@ -1,35 +1,100 @@
-interface Job {
-  title: string;
-  description: string;
-  candidate_required_location: string;
-}
+// interface Job {
+//   title: string;
+//   description: string;
+//   candidate_required_location: string;
+// }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const keyword = searchParams.get("keyword")?.toLowerCase() || "developer";
 
+  const remotiveURL = `https://remotive.com/api/remote-jobs?search=${encodeURIComponent(keyword)}`;
+  const adzunaURL = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${process.env.ADZUNA_ID}&app_key=${process.env.ADZUNA_API_KEY}&content-type=application/json`;
+
   try {
-    const res = await fetch(`https://remotive.com/api/remote-jobs?search=${encodeURIComponent(keyword)}`, { next: { revalidate: 1800 } });
-    // http://api.adzuna.com/v1/api/jobs/us/search/1?app_id=ed545af7&app_key=39dddeaf676c90d6c49e932724ac7bde&results_per_page=20&what=javascript%20developer&content-type=application/json - adzuna API example
+    const [remotiveRes, adzunaRes] = await Promise.all([fetch(remotiveURL), fetch(adzunaURL)]);
 
-    const data = await res.json();
+    const remotiveData = await remotiveRes.json();
+    const adzunaData = await adzunaRes.json();
 
-    const rawJobs = data.jobs || [];
+    interface RemotiveJob {
+      id: number | string;
+      title: string;
+      company_name: string;
+      company_logo?: string | null;
+      job_type: string;
+      publication_date: string;
+      candidate_required_location?: string;
+      salary?: string | null;
+      url: string;
+      description: string;
+      api: string;
+    }
 
-    const excludedTerms = ["senior"];
-    const filtered = rawJobs.filter((job: Job) => {
-      const title = job.title?.toLowerCase() || "";
-      const description = job.description?.toLowerCase() || "";
-      const location = job.candidate_required_location?.toLowerCase() || "";
+    const normalizedRemotive = (remotiveData.jobs || []).map((job: RemotiveJob) => ({
+      id: job.id.toString(),
+      title: job.title,
+      company_name: job.company_name,
+      company_logo: job.company_logo || null,
+      job_type: job.job_type,
+      postedAt: job.publication_date,
+      candidate_required_location: job.candidate_required_location || "Remote",
+      salary: job.salary || null,
+      url: job.url,
+      description: job.description,
+      api: "Remotive",
+    }));
 
-      const includesKeyword = title.includes(keyword) || description.includes(keyword);
-      const excludesBadTerms = !excludedTerms.some((term) => title.includes(term) || description.includes(term));
-      const restrictLocation = location.includes("usa");
+    interface AdzunaJob {
+      id: string | number;
+      title: string;
+      company: {
+        display_name: string;
+      };
+      contract_type?: string;
+      created: string;
+      location?: {
+        display_name?: string;
+      };
+      salary_min?: number;
+      salary_max?: number;
+      redirect_url: string;
+      description: string;
+      api: string;
+    }
 
-      return includesKeyword && excludesBadTerms && restrictLocation;
-    });
+    const normalizedAdzuna = (adzunaData.results || []).map((job: AdzunaJob) => ({
+      id: job.id.toString(),
+      title: job.title,
+      company_name: job.company.display_name,
+      company_logo: null, // Adzuna doesn't provide a logo
+      job_type: job.contract_type || "N/A",
+      postedAt: job.created,
+      candidate_required_location: job.location?.display_name || "N/A",
+      salary: job.salary_min && job.salary_max ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()}` : null,
+      url: job.redirect_url,
+      description: job.description,
+      api: "Adzuna",
+    }));
 
-    return Response.json(filtered);
+    const combined = [...normalizedRemotive, ...normalizedAdzuna];
+
+    const rawJobs = combined || [];
+
+    // const excludedTerms = ["senior"];
+    // const filtered = rawJobs.filter((job: Job) => {
+    //   const title = job.title?.toLowerCase() || "";
+    //   const description = job.description?.toLowerCase() || "";
+    //   const location = job.candidate_required_location?.toLowerCase() || "";
+
+    //   const includesKeyword = title.includes(keyword) || description.includes(keyword);
+    //   const excludesBadTerms = !excludedTerms.some((term) => title.includes(term) || description.includes(term));
+    //   const restrictLocation = location.includes("usa");
+
+    //   return includesKeyword && excludesBadTerms && restrictLocation;
+    // });
+
+    return Response.json(rawJobs);
   } catch (error) {
     console.error("Error fetching jobs:", error);
     return new Response("Failed to fetch jobs", { status: 500 });
