@@ -15,6 +15,7 @@ type Job = {
   salary: string | null;
   url: string;
   description: string;
+  api: string;
 };
 
 export default function Home() {
@@ -44,6 +45,8 @@ export default function Home() {
           <p className="text-gray-400">
             {job.job_type} | {job.salary ? `${job.salary}` : "Compensation not specified"}
           </p>
+          <p className="text-gray-400">{job.postedAt}</p>
+          <p>{job.api}</p>
           <p
             className="text-gray-400 mt-6"
             dangerouslySetInnerHTML={{
